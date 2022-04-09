@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="Description" content="Netflix on keybase | 1700+ interesting videos">
+
+    <title>Keyflix</title>
+    <link rel="stylesheet" href="/static/css/index.min.css">
+    <script type="text/javascript" src="/static/js/pako_inflate.min.js"></script>
+    <script type="text/javascript" src="/static/js/clusterize.min.js"></script>
+    <script async defer data-domain="keyflix.stuehieyr.com" src="https://stats.40two.app/js/plausible.js"></script>
+    <script>
+        var insights;
+        var tot_score;
+        if (!('watch_history' in localStorage)){
+            localStorage.watch_history = "";
+        }
+	const version = '03'
+        const response = fetch('https://keyflix.stuehieyr.com/version/'+version+'/new_output.json.gz').then(
+            response => response.arrayBuffer()).then(
+                data => pako.ungzip(data, {"to": "string"})).then(
+                    raw => JSON.parse(raw)).then(
+                        json=> insights=json).then(() => {
+                            if(localStorage.watch_history != ""){
+                                  b = localStorage.watch_history.split('||');
+                                  let a_tot_score = insights['SimMatrix'][b[0]];
+                                  for(let i=1; i<b.length - 1; i++){
+                                      a_tot_score = a_tot_score.map((ak,ik)=> (ak + insights['SimMatrix'][b[i]][ik])/2);
+                                  }
+                                  let local_insights = a_tot_score.map((value, idx) => { return { value, idx }; });
+                                  local_insights.sort((a,b) => {
+                                    if (a.value < b.value){
+                                        return 1;
+                                    }
+                                    if(a.value > b.value){
+                                        return -1;
+                                    }
+                                    return 0;
+                                });
+                                let argindices = local_insights.map(data => data.idx);
+                                let local_recommends = argindices.slice(0,10);
+                                tot_score = local_recommends;
+                                insights['recommend'] = tot_score;
+                             }
+                        });
+    </script>
+    <link rel="modulepreload" href="/static/js/views/Dashboard.js">
+    <link rel="modulepreload" href="/static/js/views/About.js">
+    <link rel="modulepreload" href="/static/js/views/Posts.js">
+    <link rel="modulepreload" href="/static/js/views/PostView.js">
+    <link rel="modulepreload" href="/static/js/views/Settings.js">
+    <link rel="modulepreload" href="/static/js/views/AbstractView.js"> 
+</head>
+<body>
+    <nav class="topnav shadowy-box" id="myTopnav">
+        <a href="/" class="nav__link" style="background: #D50914;"><b>Keyflix</b></a>
+        <a href="/" class="nav__link" data-link>Dashboard</a>
+        <a href="/videos" class="nav__link" data-link>Feeling Lucky!</a>
+        <a href="/recommend" class="nav__link" data-link>Recommended</a>
+        <a href="/about" class="nav__link" data-link>About</a>
+        <a href="javascript:void(0);" class="icon" onclick="myFunction2()">
+            <i class="icon-menu"></i>
+          </a>
+    </nav>
+    <div id="app" style="background-color: #333;"></div>
+    <script type="module" src="/static/js/index.min.js"></script>
+    <script>
+    function myFunction() {
+        var input, filter, ul, li, a, i, txtValue;
+        input = document.getElementById("search-criteria");
+        filter = input.value;
+        ul = document.getElementById("contentArea");
+        li = ul.getElementsByTagName("li");
+        let filtered_data = [];
+        console.info('SEARCHING');
+        for (i = 0; i < insights['fname'].length; i++) {
+            txtValue =insights['fname'][i];
+            if(filter == ""){
+                filtered_data.push(`<li><a class="nav__link" href="/videos/${i}" class="nav__link" data-link>${insights.fname[i]}</a></li>`);
+                continue;
+            }
+            if (txtValue.toUpperCase().includes(filter.toUpperCase())) {
+                filtered_data.push(`<li><a class="nav__link" href="/videos/${i}" class="nav__link" data-link>${insights.fname[i]}</a></li>`);
+            }
+        }
+        var clusterize = new Clusterize({
+            rows: filtered_data,
+    scrollId: 'scrollArea',
+    contentId: 'contentArea'
+    });
+        }
+
+function myFunction2() {
+  var x = document.getElementById("myTopnav");
+  if (x.className === "topnav") {
+    x.className += " responsive";
+  } else {
+    x.className = "topnav";
+  }
+}
+        </script>
+
+</body>
+</html>
